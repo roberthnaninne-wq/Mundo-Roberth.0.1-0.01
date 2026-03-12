@@ -1,3 +1,25 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Environment Variables
 .env
+.env.*
+!.env.example
+
+# Supabase
 .supabase/
+supabase/.temp/
+
+# Build Artifacts
+.next/
+dist/
+out/
+build/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
