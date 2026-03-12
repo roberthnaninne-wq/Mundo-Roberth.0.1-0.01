@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import ClientLayout from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Mundo Roberth.0.1 | Dashboard",
@@ -15,12 +15,7 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body className="bg-[#0a0a0b] text-[#f0f0f1]">
-        <Sidebar />
-        <main className="pl-64 min-h-screen">
-          <div className="container">
-            {children}
-          </div>
-        </main>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

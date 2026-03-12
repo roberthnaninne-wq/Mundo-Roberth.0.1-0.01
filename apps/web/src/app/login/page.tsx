@@ -1,10 +1,39 @@
-import { login } from './actions'
+"use client";
+
+import { createClient } from '@/utils/supabase/client'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage({
   searchParams,
 }: {
   searchParams: { message: string; error: string }
 }) {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      router.push('/login?error=Could not authenticate user');
+    } else {
+      router.push('/login?message=Check your email for the login link');
+    }
+    setLoading(false);
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="glass w-full max-w-md p-8 rounded-3xl space-y-8 animate-in fade-in zoom-in duration-500">
@@ -13,7 +42,7 @@ export default function LoginPage({
           <p className="text-zinc-500 mt-2">Acesso restrito ao Administrador</p>
         </div>
 
-        <form className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">
               Email Real
@@ -29,10 +58,11 @@ export default function LoginPage({
           </div>
 
           <button
-            formAction={login}
-            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)]"
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] disabled:opacity-50"
           >
-            Enviar Magic Link
+            {loading ? 'Enviando...' : 'Enviar Magic Link'}
           </button>
         </form>
 

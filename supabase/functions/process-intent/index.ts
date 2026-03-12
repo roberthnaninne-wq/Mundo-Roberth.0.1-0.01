@@ -1,13 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-// Consumer Worker: 'process-intent' (Sprint 6 - Expansion of Consciousness)
-const supabaseUrl = Deno.env.get('MY_SUPABASE_URL') ?? '';
-const supabaseServiceKey = Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// Consumer Worker: 'process-intent' (Using OpenAI GPT)
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('MY_SUPABASE_URL') ?? '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// AI Configuration (Configurable via ENV)
-const AI_MODEL = Deno.env.get('AI_MODEL') || 'gemini-1.5-flash';
+// AI Configuration - Using OpenAI
 const TIMEZONE = Deno.env.get('WORLD_TIMEZONE') || 'America/Sao_Paulo';
 
 Deno.serve(async (req) => {
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     // 1. READ from pgmq (Pull-based queue)
     const { data: queueItems, error: rpcError } = await supabase.rpc('pop_intent_job_from_queue', { lock_seconds: 45 });
-    
+
     if (rpcError) throw rpcError;
     if (!queueItems || queueItems.length === 0) return new Response(JSON.stringify({ ok: true, msg: "Empty Queue" }), { headers: { "Content-Type": "application/json" } });
 
@@ -38,7 +37,7 @@ Deno.serve(async (req) => {
        .select('telegram_chat_id, commands(payload)')
        .eq('id', jobId)
        .single();
-    
+
     if (dataError) throw dataError;
     const rawMessage = (jobData.commands as any)?.payload?.text || "Mensagem sem texto";
     const chatId = jobData.telegram_chat_id;
@@ -48,63 +47,70 @@ Deno.serve(async (req) => {
     await supabase.from('job_events').insert({
         job_id: jobId,
         status: 'running',
-        message: `Worker started AI analysis using ${AI_MODEL}.`
+        message: `Worker started AI analysis using OpenAI GPT.`
     });
 
-    // --- COGNITIVE EXECUTION LAYER ---
-    const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiKey) throw new Error("GEMINI_API_KEY not found.");
+    // --- COGNITIVE EXECUTION LAYER (OPENAI) ---
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiKey) throw new Error("OPENAI_API_KEY not found.");
 
     const currentTime = new Date().toLocaleString("pt-BR", { timeZone: TIMEZONE });
     const isoNow = new Date().toISOString();
 
-    const systemInstruction = `
-      Você é o Núcleo Cognitivo e Executor do Mundo Roberth.0.1.
-      Sua missão é interpretar a intenção do usuário e decidir se deve executar uma ação local.
-      
-      CONTEXTO TEMPORAL:
-      - Horário Atual (Brasil/SP): ${currentTime}
-      - ISO Now: ${isoNow}
-      - Timezone: ${TIMEZONE}
-      
-      Importante: Interprete expressões como "amanhã", "hoje à noite", "segunda-feira" com base no Horário Atual.
-      
-      AÇÕES DISPONÍVEIS:
-      1. 'task_creation': Para listas, deveres, lembretes simples.
-      2. 'event_scheduling': Para compromissos com hora marcada, reuniões ou eventos datados.
-      
-      FORMATO DE RESPOSTA (JSON ESTREITO):
-      {
-        "intent_key": "string",
-        "confidence": number (0-1),
-        "action_key": "task_creation" | "event_scheduling" | "none",
-        "should_execute_action": boolean,
-        "action_payload": {
-           "title": "título curto e claro",
-           "description": "detalhes extras extraídos",
-           "start_at": "ISO8601 string (obrigatório para event)",
-           "end_at": "ISO8601 string or null",
-           "due_at": "ISO8601 string (para task)",
-           "all_day": boolean
-        },
-        "response_text": "mensagem amigável para o usuário confirmando ou respondendo",
-        "reasoning_summary": "breve explicação do porquê desta decisão"
-      }
-    `;
+    const systemInstruction = `Você é o Núcleo Cognitivo e Executor do Mundo Roberth.0.1.
+Sua missão é interpretar a intenção do usuário e decidir se deve executar uma ação local.
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${geminiKey}`;
-    const aiResponse = await fetch(geminiUrl, {
+CONTEXTO TEMPORAL:
+- Horário Atual (Brasil/SP): ${currentTime}
+- ISO Now: ${isoNow}
+- Timezone: ${TIMEZONE}
+
+Importante: Interprete expressões como "amanhã", "hoje à noite", "segunda-feira" com base no Horário Atual.
+
+AÇÕES DISPONÍVEIS:
+1. 'task_creation': Para listas, deveres, lembretes simples.
+2. 'event_scheduling': Para compromissos com hora marcada, reuniões ou eventos datados.
+
+FORMATO DE RESPOSTA (JSON ESTREITO):
+{
+  "intent_key": "string",
+  "confidence": number (0-1),
+  "action_key": "task_creation" | "event_scheduling" | "none",
+  "should_execute_action": boolean,
+  "action_payload": {
+     "title": "título curto e claro",
+     "description": "detalhes extras extraídos",
+     "start_at": "ISO8601 string (obrigatório para event)",
+     "end_at": "ISO8601 string or null",
+     "due_at": "ISO8601 string (para task)",
+     "all_day": boolean
+  },
+  "response_text": "mensagem amigável para o usuário confirmando ou respondendo",
+  "reasoning_summary": "breve explicação do porquê desta decisão"
+}`;
+
+    // Using OpenAI API
+    const openaiUrl = 'https://api.openai.com/v1/chat/completions';
+    const aiResponse = await fetch(openaiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiKey}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `${systemInstruction}\n\nUsuário: "${rawMessage}"` }] }],
-        generationConfig: { response_mime_type: "application/json" }
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: `Usuário: "${rawMessage}"` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7
       })
     });
 
-    if (!aiResponse.ok) throw new Error(`Gemini Error: ${await aiResponse.text()}`);
+    if (!aiResponse.ok) throw new Error(`OpenAI Error: ${await aiResponse.text()}`);
     const aiData = await aiResponse.json();
-    const aiResult = JSON.parse(aiData.candidates[0].content.parts[0].text);
+    const aiResult = JSON.parse(aiData.choices[0].message.content);
     // -----------------------------------------------------
 
     // --- ACTION ROUTING ---
@@ -124,7 +130,7 @@ Deno.serve(async (req) => {
 
             if (taskError && taskError.code !== '23505') throw taskError;
             executionResult = { executed: true, detail: (task ? `Task: ${task.id}` : "Task already existed") as any };
-        } 
+        }
         else if (aiResult.action_key === 'event_scheduling') {
             const { data: event, error: eventError } = await supabase
                .from('calendar_events')
@@ -141,7 +147,7 @@ Deno.serve(async (req) => {
             if (eventError && eventError.code !== '23505') throw eventError;
             executionResult = { executed: true, detail: (event ? `Event: ${event.id}` : "Event already existed") as any };
         }
-        
+
         if (executionResult.executed) {
             await supabase.from('job_events').insert({
                 job_id: jobId,
@@ -152,9 +158,9 @@ Deno.serve(async (req) => {
     }
 
     // 5. Finalize Job
-    await supabase.from('jobs').update({ 
-        status: 'completed', 
-        result: { ...aiResult, execution: executionResult } 
+    await supabase.from('jobs').update({
+        status: 'completed',
+        result: { ...aiResult, execution: executionResult }
     }).eq('id', jobId);
 
     // 6. Respond to Telegram
@@ -176,12 +182,12 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("Worker Critical Error:", err);
-    
+
     if (currentJobId) {
         try {
-            await supabase.from('jobs').update({ 
-                status: 'failed', 
-                result: { error: err.message, stack: err.stack } 
+            await supabase.from('jobs').update({
+                status: 'failed',
+                result: { error: err.message, stack: err.stack }
             }).eq('id', currentJobId);
 
             await supabase.from('job_events').insert({
@@ -198,7 +204,7 @@ Deno.serve(async (req) => {
         }
     }
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
         error: err instanceof Error ? err.message : 'Unknown',
         stack: err instanceof Error ? err.stack : null
     }), { status: 500 });

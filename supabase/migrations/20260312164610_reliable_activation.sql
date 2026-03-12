@@ -1,6 +1,6 @@
 -- 1. Schema Update: Adicionar telegram_chat_id na tabela de jobs
 ALTER TABLE public.jobs
-ADD COLUMN telegram_chat_id BIGINT;
+ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT;
 
 -- 2. Garantir que a extensão pg_net esteja disponível
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;

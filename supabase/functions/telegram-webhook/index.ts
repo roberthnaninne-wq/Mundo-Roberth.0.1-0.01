@@ -2,8 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 // Setup the Supabase client utilizing the Service Role Key to bypass RLS
-const supabaseUrl = Deno.env.get('MY_SUPABASE_URL') ?? '';
-const supabaseServiceKey = Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('MY_SUPABASE_URL') ?? '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 Deno.serve(async (req) => {
@@ -73,11 +73,10 @@ Deno.serve(async (req) => {
       if (eventError) throw eventError;
       
       // 5. Fire to the Durable Queue (PGMQ) via RPC
-      // The trigger 'trigger_activate_worker_on_job_insert' via pg_net 
+      // The trigger 'trigger_activate_worker_on_job_insert' via pg_net
       // will automatically wake up the consumer. No direct invoke needed!
-      const { error: queueError } = await supabase.rpc('push_intent_job', { 
-        p_job_id: job.id,
-        p_chat_id: chatId
+      const { error: queueError } = await supabase.rpc('push_intent_job', {
+        p_job_id: job.id
       });
 
       if (queueError) {

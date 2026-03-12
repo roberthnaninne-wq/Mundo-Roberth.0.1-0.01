@@ -1,5 +1,5 @@
--- Habilitar a extensão oficial de Message Queue (pgmq)
-CREATE EXTENSION IF NOT EXISTS pgmq WITH SCHEMA public;
+-- Habilitar a extensão oficial de Message Queue (pgmq) no schema correto
+CREATE EXTENSION IF NOT EXISTS pgmq;
 
 -- Criar a fila durável principal para os jobs de intenções
 SELECT pgmq.create('intent_jobs');
