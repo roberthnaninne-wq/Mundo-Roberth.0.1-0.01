@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       const user = update.message.from;
       const text = update.message.text || '';
       const chatId = update.message.chat?.id;
-      
+
       // 1. Upsert the profile using the telegram_id to get our internal UUID
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (profileError) throw profileError;
-      
+
       const userId = profile.id;
 
       // 2. Register the Command (Intent)
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         })
         .select('id')
         .single();
-        
+
       if (cmdError) throw cmdError;
 
       // 3. Create the Job in pending status with chat_id for later response
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         })
         .select('id')
         .single();
-        
+
       if (jobError) throw jobError;
 
       // 4. Register the initial Job Event
@@ -69,18 +69,28 @@ Deno.serve(async (req) => {
            status: 'pending',
            message: 'Job received from Telegram Webhook and pending execution.'
         });
-        
-      if (eventError) throw eventError;
-      
-      // 5. Fire to the Durable Queue (PGMQ) via RPC
-      // The trigger 'trigger_activate_worker_on_job_insert' via pg_net
-      // will automatically wake up the consumer. No direct invoke needed!
-      const { error: queueError } = await supabase.rpc('push_intent_job', {
-        p_job_id: job.id
-      });
 
-      if (queueError) {
-         console.error("Failed to push to pgmq:", queueError);
+      if (eventError) throw eventError;
+
+      // 5. Directly invoke the Edge Function to process the job (bypass unreliable pg_net trigger)
+      const functionUrl = `${supabaseUrl}/functions/v1/process-intent`;
+      const functionKey = supabaseServiceKey;
+
+      try {
+        const processResponse = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${functionKey}`
+          },
+          body: JSON.stringify({ job_id: job.id })
+        });
+
+        if (!processResponse.ok) {
+          console.error('Process intent error:', await processResponse.text());
+        }
+      } catch (invokeError) {
+        console.error('Failed to invoke process-intent:', invokeError);
       }
 
       // 6. Notify the user via Telegram API (Immediate confirmation)
@@ -93,25 +103,25 @@ Deno.serve(async (req) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chat_id: chatId,
-                    text: "Sua mensagem foi recebida e virou um Job assíncrono. Está sendo processada! ⚙️"
+                    text: "Sua mensagem foi recebida! Vou processá-la agora. 🤖"
                 })
              });
          }
       }
-      
+
       console.log(`Command ${command.id} & Job ${job.id} registered for T-ID: ${user.id}`);
     }
 
-    return new Response(JSON.stringify({ ok: true }), { 
-      headers: { "Content-Type": "application/json" } 
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { "Content-Type": "application/json" }
     });
 
   } catch (err) {
     console.error(err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), { 
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 400,
-      headers: { "Content-Type": "application/json" } 
+      headers: { "Content-Type": "application/json" }
     });
   }
 });

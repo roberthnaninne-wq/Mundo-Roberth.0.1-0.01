@@ -14,21 +14,27 @@ Deno.serve(async (req) => {
   let currentMsgId: any = null;
 
   try {
-    // 1. READ from pgmq (Pull-based queue)
-    const { data: queueItems, error: rpcError } = await supabase.rpc('pop_intent_job_from_queue', { lock_seconds: 45 });
+    // Get job_id from request body (passed directly from telegram-webhook)
+    const body = await req.json();
+    let jobId = body.job_id;
 
-    if (rpcError) throw rpcError;
-    if (!queueItems || queueItems.length === 0) return new Response(JSON.stringify({ ok: true, msg: "Empty Queue" }), { headers: { "Content-Type": "application/json" } });
+    // If no job_id in body, try to read from queue (fallback)
+    if (!jobId) {
+      const { data: queueItems, error: rpcError } = await supabase.rpc('pop_intent_job_from_queue', { lock_seconds: 45 });
 
-    const msg = queueItems[0];
-    currentJobId = msg.message.job_id;
-    currentMsgId = msg.msg_id;
-    const jobId = currentJobId;
-    const msgId = currentMsgId;
+      if (rpcError) throw rpcError;
+      if (!queueItems || queueItems.length === 0) {
+        return new Response(JSON.stringify({ ok: true, msg: "No jobs to process" }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      const msg = queueItems[0];
+      currentJobId = msg.message.job_id;
+      currentMsgId = msg.msg_id;
+      jobId = currentJobId;
+    }
 
     if (!jobId) {
-        if (msgId) await supabase.rpc('archive_intent_job', { p_msg_id: msgId });
-        throw new Error("Invalid payload in PGMQ.");
+      throw new Error("No job_id provided and queue is empty.");
     }
 
     // 2. Fetch Job & Command Details
@@ -177,7 +183,11 @@ FORMATO DE RESPOSTA (JSON ESTREITO):
         });
     }
 
-    await supabase.rpc('archive_intent_job', { p_msg_id: msgId });
+    // Archive the message if it came from queue
+    if (currentMsgId) {
+      await supabase.rpc('archive_intent_job', { p_msg_id: currentMsgId });
+    }
+
     return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
 
   } catch (err: any) {
