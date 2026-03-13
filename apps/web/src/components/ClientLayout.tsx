@@ -1,14 +1,23 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, ListTodo, Activity, ShieldCheck, LogOut, User, Calendar } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Home, BookOpen, Activity, Settings, ShieldCheck, LogOut, User, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const navItems = [
+  { href: '/', label: 'O Reino', icon: Home, color: 'primary' },
+  { href: '/biblioteca', label: 'Biblioteca', icon: BookOpen, color: 'secondary' },
+  { href: '/jobs', label: 'Execuções', icon: Activity, color: 'accent' },
+  { href: '/configuracoes', label: 'Configurações', icon: Settings, color: 'emerald-500' },
+];
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     async function getUser() {
@@ -34,22 +43,32 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </div>
 
         <nav className="flex-1 space-y-2">
-          <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-zinc-400 hover:text-white group">
-            <Home size={20} className="group-hover:text-primary transition-colors" />
-            <span className="font-medium">O Reino</span>
-          </Link>
-          <Link href="/tasks" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-zinc-400 hover:text-white group">
-            <ListTodo size={20} className="group-hover:text-secondary transition-colors" />
-            <span className="font-medium">Tarefas</span>
-          </Link>
-          <Link href="/agenda" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-zinc-400 hover:text-white group">
-            <Calendar size={20} className="group-hover:text-emerald-500 transition-colors" />
-            <span className="font-medium">Agenda</span>
-          </Link>
-          <Link href="/jobs" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-zinc-400 hover:text-white group">
-            <Activity size={20} className="group-hover:text-accent transition-colors" />
-            <span className="font-medium">Execuções</span>
-          </Link>
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+                  isActive
+                    ? `bg-${item.color}/10 text-white border border-${item.color}/20`
+                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Icon
+                  size={20}
+                  className={`transition-colors ${
+                    isActive ? `text-${item.color}` : `group-hover:text-${item.color}`
+                  }`}
+                />
+                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <Sparkles size={12} className={`ml-auto text-${item.color} animate-pulse`} />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="mt-auto space-y-4">
