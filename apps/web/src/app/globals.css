@@ -1,15 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
-  --background: #0a0a0b;
-  --foreground: #f0f0f1;
-  --card: #141417;
-  --card-border: #232328;
-  --primary: #3b82f6;
-  --primary-glow: rgba(59, 130, 246, 0.2);
-  --secondary: #6366f1;
-  --accent: #a855f7;
-  --text-muted: #a1a1aa;
+  /* Elegant Minimalist Theme */
+  --background: #ffffff;
+  --background-dark: #0a0a0a;
+  --foreground: #1a1a1a;
+  --foreground-light: #ffffff;
+  --border: #e5e5e5;
+  --border-dark: #333333;
+  --text-muted: #6b6b6b;
+  --accent: #0a0a0a;
+  --accent-hover: #333333;
+
+  /* Fonts */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * {
@@ -18,42 +23,258 @@
   margin: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  line-height: 1.6;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
-/* Glassmorphism Classes */
-.glass {
-  background: rgba(20, 20, 23, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--card-border);
+a:hover {
+  opacity: 0.7;
 }
 
-.glow-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 0 20px var(--primary-glow);
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+.sans {
+  font-family: var(--font-sans);
+}
+
+/* Elegant Title */
+.title-elegant {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.title-gradient {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--foreground);
 }
 
 /* Layout Utilities */
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.title-gradient {
-  background: linear-gradient(to right, var(--primary), var(--accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
+.container-narrow {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Glass effect - now elegant minimal */
+.glass {
+  background: var(--background);
+  border-right: 1px solid var(--border);
+}
+
+/* Split Layout */
+.split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.split-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  background: var(--background-dark);
+  color: var(--foreground-light);
+}
+
+.split-right {
+  position: relative;
+  overflow: hidden;
+}
+
+.split-right img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  background: var(--accent);
+  color: var(--foreground-light);
+}
+
+.btn-light {
+  border-color: var(--foreground-light);
+  color: var(--foreground-light);
+}
+
+.btn-light:hover {
+  background: var(--foreground-light);
+  color: var(--background-dark);
+}
+
+.btn-filled {
+  background: var(--accent);
+  color: var(--foreground-light);
+}
+
+.btn-filled:hover {
+  background: var(--accent-hover);
+}
+
+/* Cards - Elegant style */
+.card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+/* Input Fields */
+input, textarea {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Navigation */
+.nav-link {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link:hover {
+  opacity: 0.6;
+}
+
+.nav-link.active {
+  font-weight: 600;
+}
+
+/* Status Indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-success {
+  background: #22c55e;
+}
+
+.status-warning {
+  background: #eab308;
+}
+
+.status-error {
+  background: #ef4444;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .split-left {
+    padding: 2rem;
+    min-height: 60vh;
+  }
+
+  .split-right {
+    min-height: 40vh;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

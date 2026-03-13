@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
-import { Settings, Save, Zap, Bell, Shield, Bot, Database, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { Database, Bot, Zap, RefreshCw, Check, AlertCircle, ArrowRight, Shield, Settings } from 'lucide-react';
 
 interface SettingItem {
   id: number;
@@ -24,7 +24,6 @@ export default function ConfiguracoesPage() {
   const [settings, setSettings] = useState<SettingItem[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // System status
@@ -42,7 +41,6 @@ export default function ConfiguracoesPage() {
   async function loadData() {
     const supabase = createClient();
 
-    // Load settings
     const { data: settingsData } = await supabase
       .from('settings')
       .select('*')
@@ -50,7 +48,6 @@ export default function ConfiguracoesPage() {
 
     if (settingsData) setSettings(settingsData);
 
-    // Load workflow profiles
     const { data: workflowsData } = await supabase
       .from('workflow_profiles')
       .select('*')
@@ -64,15 +61,12 @@ export default function ConfiguracoesPage() {
   async function checkSystemStatus() {
     const supabase = createClient();
 
-    // Check database connection
     const { error: dbError } = await supabase.from('jobs').select('id').limit(1);
     setSystemStatus(prev => ({
       ...prev,
       database: dbError ? 'error' : 'ok'
     }));
 
-    // For Telegram and OpenAI, we'd need server-side checks
-    // For now, show as "configured" if we have data
     setSystemStatus(prev => ({
       ...prev,
       telegram: 'ok',
@@ -103,47 +97,37 @@ export default function ConfiguracoesPage() {
     setTimeout(() => setMessage(null), 3000);
   }
 
-  const StatusIndicator = ({ status }: { status: string }) => (
-    <span className={`flex items-center gap-2 text-sm ${
-      status === 'ok' ? 'text-emerald-500' :
-      status === 'error' ? 'text-red-500' :
-      'text-zinc-500'
-    }`}>
-      <span className={`w-2 h-2 rounded-full ${
-        status === 'ok' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' :
-        status === 'error' ? 'bg-red-500' :
-        'bg-zinc-500 animate-pulse'
-      }`}></span>
-      {status === 'ok' ? 'Operacional' : status === 'error' ? 'Erro' : 'Verificando...'}
-    </span>
-  );
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <RefreshCw className="w-8 h-8 text-gray-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="animate-fadeIn">
       {/* Header */}
-      <header>
-        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <Settings className="text-primary" />
-          Palacio de Configuracoes
-        </h2>
-        <p className="text-zinc-500 mt-1">
-          Centro de governo do Mundo Roberth.0.1 - Configure prompts, workflows e politicas
-        </p>
-      </header>
+      <section className="bg-black text-white py-20 px-8 lg:px-16">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-sm tracking-[0.3em] uppercase text-gray-400 mb-4">
+            Centro de Governo
+          </p>
+          <h1 className="text-4xl lg:text-5xl font-light mb-6" style={{ fontFamily: 'var(--font-serif)' }}>
+            Configuracoes
+          </h1>
+          <p className="text-gray-400 max-w-xl">
+            Configure prompts, workflows, integracoes e politicas do sistema.
+          </p>
+        </div>
+      </section>
 
-      {/* Message Toast */}
+      {/* Toast Message */}
       {message && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg animate-in slide-in-from-top ${
-          message.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-500' :
-          'bg-red-500/20 border border-red-500/30 text-red-400'
+        <div className={`fixed top-24 right-6 z-50 flex items-center gap-3 px-6 py-4 shadow-lg animate-fadeIn ${
+          message.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-800'
+            : 'bg-red-50 border border-red-200 text-red-800'
         }`}>
           {message.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
           {message.text}
@@ -151,128 +135,167 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* System Status */}
-      <div className="glass rounded-2xl p-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Zap className="text-emerald-500" />
-          Status dos Sistemas
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-            <div className="flex items-center gap-3">
-              <Database className="text-primary" size={20} />
-              <span className="font-medium">Banco de Dados</span>
+      <section className="py-16 px-8 lg:px-16 bg-gray-50 border-b border-gray-200">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl mb-8" style={{ fontFamily: 'var(--font-serif)' }}>
+            Status dos Sistemas
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white border border-gray-200 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Database size={24} className="text-gray-400" />
+                <span className="font-medium">Banco de Dados</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  systemStatus.database === 'ok' ? 'bg-green-500' :
+                  systemStatus.database === 'error' ? 'bg-red-500' : 'bg-gray-400 animate-pulse'
+                }`}></span>
+                <span className="text-sm text-gray-500">
+                  {systemStatus.database === 'ok' ? 'Online' :
+                   systemStatus.database === 'error' ? 'Erro' : 'Verificando'}
+                </span>
+              </div>
             </div>
-            <StatusIndicator status={systemStatus.database} />
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-            <div className="flex items-center gap-3">
-              <Bot className="text-accent" size={20} />
-              <span className="font-medium">Telegram Bot</span>
+            <div className="bg-white border border-gray-200 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Bot size={24} className="text-gray-400" />
+                <span className="font-medium">Telegram Bot</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  systemStatus.telegram === 'ok' ? 'bg-green-500' :
+                  systemStatus.telegram === 'error' ? 'bg-red-500' : 'bg-gray-400 animate-pulse'
+                }`}></span>
+                <span className="text-sm text-gray-500">
+                  {systemStatus.telegram === 'ok' ? 'Online' :
+                   systemStatus.telegram === 'error' ? 'Erro' : 'Verificando'}
+                </span>
+              </div>
             </div>
-            <StatusIndicator status={systemStatus.telegram} />
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-            <div className="flex items-center gap-3">
-              <Zap className="text-emerald-500" size={20} />
-              <span className="font-medium">OpenAI GPT</span>
+            <div className="bg-white border border-gray-200 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Zap size={24} className="text-gray-400" />
+                <span className="font-medium">OpenAI GPT</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  systemStatus.openai === 'ok' ? 'bg-green-500' :
+                  systemStatus.openai === 'error' ? 'bg-red-500' : 'bg-gray-400 animate-pulse'
+                }`}></span>
+                <span className="text-sm text-gray-500">
+                  {systemStatus.openai === 'ok' ? 'Online' :
+                   systemStatus.openai === 'error' ? 'Erro' : 'Verificando'}
+                </span>
+              </div>
             </div>
-            <StatusIndicator status={systemStatus.openai} />
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Workflow Profiles */}
-      <div className="glass rounded-2xl p-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Zap className="text-accent" />
-          Perfis de Workflow
-        </h3>
-        {workflows.length > 0 ? (
-          <div className="space-y-4">
-            {workflows.map((workflow) => (
-              <div key={workflow.id} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-all">
-                <div>
-                  <h4 className="font-bold">{workflow.display_name}</h4>
-                  <p className="text-sm text-zinc-500">{workflow.workflow_key}</p>
-                </div>
-                <button
-                  onClick={() => toggleWorkflow(workflow.id, workflow.is_enabled)}
-                  className={`relative w-14 h-7 rounded-full transition-all ${
-                    workflow.is_enabled ? 'bg-emerald-500' : 'bg-white/10'
-                  }`}
+      <section className="py-16 px-8 lg:px-16 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl mb-8" style={{ fontFamily: 'var(--font-serif)' }}>
+            Perfis de Workflow
+          </h2>
+          {workflows.length > 0 ? (
+            <div className="space-y-4">
+              {workflows.map((workflow) => (
+                <div
+                  key={workflow.id}
+                  className="border border-gray-200 p-6 flex items-center justify-between hover:border-black transition-all"
                 >
-                  <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${
-                    workflow.is_enabled ? 'left-8' : 'left-1'
-                  }`}></span>
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-zinc-500 text-center py-8">
-            Nenhum perfil de workflow configurado ainda.
-          </p>
-        )}
-      </div>
+                  <div>
+                    <h3 className="font-medium mb-1">{workflow.display_name}</h3>
+                    <p className="text-sm text-gray-500">{workflow.workflow_key}</p>
+                  </div>
+                  <button
+                    onClick={() => toggleWorkflow(workflow.id, workflow.is_enabled)}
+                    className={`relative w-14 h-7 rounded-full transition-all ${
+                      workflow.is_enabled ? 'bg-black' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                      workflow.is_enabled ? 'left-8' : 'left-1'
+                    }`}></span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border border-gray-200">
+              <Settings size={32} className="mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">Nenhum perfil de workflow configurado</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Settings */}
-      <div className="glass rounded-2xl p-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Shield className="text-primary" />
-          Configuracoes do Sistema
-        </h3>
-        {settings.length > 0 ? (
-          <div className="space-y-4">
-            {settings.map((setting) => (
-              <div key={setting.id} className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                <div>
-                  <h4 className="font-medium">{setting.setting_key}</h4>
-                  <p className="text-xs text-zinc-500">
-                    Escopo: {setting.scope} | Atualizado: {new Date(setting.updated_at).toLocaleString('pt-BR')}
-                  </p>
+      <section className="py-16 px-8 lg:px-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl mb-8" style={{ fontFamily: 'var(--font-serif)' }}>
+            Configuracoes do Sistema
+          </h2>
+          {settings.length > 0 ? (
+            <div className="space-y-4">
+              {settings.map((setting) => (
+                <div
+                  key={setting.id}
+                  className="bg-white border border-gray-200 p-6 flex items-center justify-between"
+                >
+                  <div>
+                    <h3 className="font-medium mb-1">{setting.setting_key}</h3>
+                    <p className="text-xs text-gray-500">
+                      Escopo: {setting.scope} | Atualizado: {new Date(setting.updated_at).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  <code className="text-sm bg-gray-100 px-4 py-2 text-gray-700 max-w-[300px] truncate">
+                    {JSON.stringify(setting.setting_value)}
+                  </code>
                 </div>
-                <code className="text-sm bg-black/50 px-3 py-1 rounded-lg text-emerald-400 max-w-[300px] truncate">
-                  {JSON.stringify(setting.setting_value)}
-                </code>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-zinc-500 text-center py-8">
-            Nenhuma configuracao definida ainda.
-          </p>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white border border-gray-200">
+              <Shield size={32} className="mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">Nenhuma configuracao definida</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Quick Actions */}
-      <div className="glass rounded-2xl p-6">
-        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <Bell className="text-secondary" />
-          Acoes Rapidas
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button className="p-4 rounded-xl bg-white/5 hover:bg-primary/10 hover:border-primary/30 border border-white/5 transition-all text-left group">
-            <RefreshCw className="text-primary mb-2 group-hover:rotate-180 transition-transform duration-500" size={24} />
-            <h4 className="font-bold">Sincronizar</h4>
-            <p className="text-xs text-zinc-500">Atualizar dados do sistema</p>
-          </button>
-          <button className="p-4 rounded-xl bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 border border-white/5 transition-all text-left group">
-            <Bot className="text-emerald-500 mb-2" size={24} />
-            <h4 className="font-bold">Testar Bot</h4>
-            <p className="text-xs text-zinc-500">Verificar conexao do Telegram</p>
-          </button>
-          <button className="p-4 rounded-xl bg-white/5 hover:bg-accent/10 hover:border-accent/30 border border-white/5 transition-all text-left group">
-            <Database className="text-accent mb-2" size={24} />
-            <h4 className="font-bold">Backup</h4>
-            <p className="text-xs text-zinc-500">Exportar dados do reino</p>
-          </button>
-          <button className="p-4 rounded-xl bg-white/5 hover:bg-red-500/10 hover:border-red-500/30 border border-white/5 transition-all text-left group">
-            <Shield className="text-red-500 mb-2" size={24} />
-            <h4 className="font-bold">Auditoria</h4>
-            <p className="text-xs text-zinc-500">Ver logs de seguranca</p>
-          </button>
+      <section className="py-16 px-8 lg:px-16 bg-white border-t border-gray-200">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl mb-8" style={{ fontFamily: 'var(--font-serif)' }}>
+            Acoes Rapidas
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <button className="border border-gray-200 p-6 text-left hover:border-black transition-all group">
+              <RefreshCw className="text-gray-400 mb-4 group-hover:rotate-180 transition-transform duration-500" size={24} />
+              <h3 className="font-medium mb-1">Sincronizar</h3>
+              <p className="text-xs text-gray-500">Atualizar dados do sistema</p>
+            </button>
+            <button className="border border-gray-200 p-6 text-left hover:border-black transition-all group">
+              <Bot className="text-gray-400 mb-4" size={24} />
+              <h3 className="font-medium mb-1">Testar Bot</h3>
+              <p className="text-xs text-gray-500">Verificar conexao do Telegram</p>
+            </button>
+            <button className="border border-gray-200 p-6 text-left hover:border-black transition-all group">
+              <Database className="text-gray-400 mb-4" size={24} />
+              <h3 className="font-medium mb-1">Backup</h3>
+              <p className="text-xs text-gray-500">Exportar dados do sistema</p>
+            </button>
+            <button className="border border-gray-200 p-6 text-left hover:border-black transition-all group">
+              <Shield className="text-gray-400 mb-4" size={24} />
+              <h3 className="font-medium mb-1">Auditoria</h3>
+              <p className="text-xs text-gray-500">Ver logs de seguranca</p>
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

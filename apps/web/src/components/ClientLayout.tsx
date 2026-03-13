@@ -2,20 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Activity, Settings, ShieldCheck, LogOut, User, Sparkles } from 'lucide-react';
+import { User, LogOut, ChevronDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: 'O Reino', icon: Home, color: 'primary' },
-  { href: '/biblioteca', label: 'Biblioteca', icon: BookOpen, color: 'secondary' },
-  { href: '/jobs', label: 'Execuções', icon: Activity, color: 'accent' },
-  { href: '/configuracoes', label: 'Configurações', icon: Settings, color: 'emerald-500' },
+  { href: '/', label: 'Painel' },
+  { href: '/biblioteca', label: 'Biblioteca' },
+  { href: '/jobs', label: 'Execuções' },
+  { href: '/configuracoes', label: 'Configurações' },
 ];
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -35,71 +36,107 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <>
-      <aside className="w-64 h-screen glass border-r border-slate-800 p-6 flex flex-col fixed left-0 top-0">
-        <div className="mb-10 px-2">
-          <h1 className="text-xl font-bold title-gradient tracking-tight">MUNDO ROBERTH</h1>
-          <p className="text-[10px] text-zinc-500 font-medium tracking-[0.2em] uppercase mt-1">Soberania Digital 0.1</p>
-        </div>
+    <div className="min-h-screen bg-white">
+      {/* Top Navigation Bar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-20">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3">
+              <h1 className="text-xl tracking-[0.2em] uppercase font-light" style={{ fontFamily: 'var(--font-serif)' }}>
+                Mundo Roberth
+              </h1>
+            </Link>
 
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                  isActive
-                    ? `bg-${item.color}/10 text-white border border-${item.color}/20`
-                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <Icon
-                  size={20}
-                  className={`transition-colors ${
-                    isActive ? `text-${item.color}` : `group-hover:text-${item.color}`
-                  }`}
-                />
-                <span className="font-medium">{item.label}</span>
-                {isActive && (
-                  <Sparkles size={12} className={`ml-auto text-${item.color} animate-pulse`} />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+            {/* Center Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`text-sm tracking-wider uppercase transition-all ${
+                      isActive
+                        ? 'text-black font-medium'
+                        : 'text-gray-500 hover:text-black'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
 
-        <div className="mt-auto space-y-4">
-          {user && (
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                  <User size={16} />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Administrador</p>
-                  <p className="text-xs text-zinc-400 truncate">{user.email}</p>
-                </div>
-              </div>
-              <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all">
-                  <LogOut size={14} /> Sair do Palácio
+            {/* User Menu */}
+            <div className="relative">
+              {user ? (
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-black transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center">
+                    <User size={16} />
+                  </div>
+                  <span className="hidden md:inline tracking-wide">{user.email?.split('@')[0]}</span>
+                  <ChevronDown size={16} className={`transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
-            </div>
-          )}
+              ) : (
+                <Link href="/login" className="text-sm tracking-wider uppercase text-gray-600 hover:text-black">
+                  Entrar
+                </Link>
+              )}
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-600">
-            <ShieldCheck size={18} />
-            <span className="text-xs font-semibold uppercase tracking-wider">Modo Governança</span>
+              {/* Dropdown Menu */}
+              {showUserMenu && user && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 shadow-lg animate-fadeIn">
+                  <div className="p-4 border-b border-gray-100">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Logado como</p>
+                    <p className="text-sm text-black truncate">{user.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      href="/configuracoes"
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      Meu Perfil
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </aside>
-      <main className="pl-64 min-h-screen">
-        <div className="container">
-          {children}
-        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-20 min-h-screen">
+        {children}
       </main>
-    </>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100 py-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-500">
+              &copy; {new Date().getFullYear()} Mundo Roberth. Soberania Digital.
+            </p>
+            <div className="flex items-center gap-6">
+              <span className="text-xs text-gray-400 tracking-wider uppercase">
+                Versão 0.1
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
